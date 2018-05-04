@@ -1,5 +1,10 @@
+__precompile__()
+
 module Struve
 
-# package code goes here
+include("fast.jl")
+include("integral.jl")
+include("large_arg.jl")
+include("small_arg.jl")
 
 end # module
