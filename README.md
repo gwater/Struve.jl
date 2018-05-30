@@ -15,7 +15,7 @@ It also implements
 [fast approximations for H₀ and H₁](http://dx.doi.org/10.1121/1.4968792) on the
 real axis (with absolute error below 2×10⁻³).
 
-Note, that methods are not exported; instead they can be accessed via
+Note that methods are not exported; instead they can be accessed via
 dot-syntax, e.g. `Struve.K0(z)`. The currently available methods are:
 
     Struve.H(ν, z)
@@ -31,5 +31,5 @@ dot-syntax, e.g. `Struve.K0(z)`. The currently available methods are:
     Struve.H0_fast(x)
     Struve.H1_fast(x)
 
-Note: The implementations have not been systematically verified yet; bug reports
-and test cases are welcome.
+Please note: Implementations have not been systematically verified yet; bug
+reports and test cases are welcome.
