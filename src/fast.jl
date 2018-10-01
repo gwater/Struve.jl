@@ -18,6 +18,8 @@ const A1 = (2 / pi) * (c2 + d2)
 const B1 = -B0
 const C1 =  C0
 
-_H0_fast{T <: Real}(z::T) = besselj1(z) + A0 * (1 - cos(z)) / z + B0 * (sin(z) - z * cos(z)) / z^2 + C0 * (z * t0 - sin(z * t0)) / z^2
+abstract type T <: Real end
 
-_H1_fast{T <: Real}(z::T) = (2 / pi) - besselj0(z) + A1 * sin(z) / z + B1 * (1 - cos(z)) / z^2 + C1 * (1 - cos(z * t0)) / z^2
+_H0_fast(z::T) = besselj1(z) + A0 * (1 - cos(z)) / z + B0 * (sin(z) - z * cos(z)) / z^2 + C0 * (z * t0 - sin(z * t0)) / z^2
+
+_H1_fast(z::T) = (2 / pi) - besselj0(z) + A1 * sin(z) / z + B1 * (1 - cos(z)) / z^2 + C1 * (1 - cos(z * t0)) / z^2
