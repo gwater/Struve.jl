@@ -3,6 +3,9 @@
 This package provides methods to compute the
 [Struve functions](https://dlmf.nist.gov/11) H, K, L, and M.
 
+[![Build Status](https://travis-ci.org/gwater/Struve.jl.svg?branch=master)](https://travis-ci.org/gwater/Struve.jl)
+[![codecov](https://codecov.io/gh/gwater/Struve.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/gwater/Struve.jl)
+
 <img alt="plot of four Struve functions (H₀, K₀, L₀, M₀) on the real axis"
 src="./example.png" width="480">
 
