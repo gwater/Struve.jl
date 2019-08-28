@@ -17,6 +17,7 @@ which are computed numerically using
 It also implements
 [fast approximations for H₀ and H₁](http://dx.doi.org/10.1121/1.4968792) on the
 real axis (with absolute error below 2×10⁻³).
+For fast, high accuracy approximations [ApproxFun.jl](https://github.com/JuliaApproximation/ApproxFun.jl) may be used.
 
 Note that methods are not exported; instead they can be accessed via
 dot-syntax, e.g. `Struve.K0(z)`. The currently available methods are:
