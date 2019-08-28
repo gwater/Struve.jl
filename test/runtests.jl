@@ -29,4 +29,14 @@ const h0_zeros = [
     end
     @test !(abs(Struve.H(0,  2.0)) < 1e-10)
     @test !(abs(Struve.H(0, 22.0)) < 1e-10)
+    for z in h0_zeros
+        @test abs(Struve.H0(z + 0im)) < 1e-10
+    end
+    @test !(abs(Struve.H0( 2.0 + 0im)) < 1e-10)
+    @test !(abs(Struve.H0(22.0 + 0im)) < 1e-10)
+    for z in h0_zeros
+        @test_broken abs(Struve.H(0, z + 0im)) < 1e-10
+    end
+    @test !(abs(Struve.H(0,  2.0 + 0im)) < 1e-10)
+    @test !(abs(Struve.H(0, 22.0 + 0im)) < 1e-10)
 end
