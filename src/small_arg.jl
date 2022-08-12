@@ -2,6 +2,8 @@
 # http://dlmf.nist.gov/11.2.E1
 # can use for x < 5 || nu > -0.75 + 0.41x + 0.023x^2
 # could result in premature underflow for nu >> x
+# struve H can be computed with forward recurrence only when x < nu
+# backward recurrence may be stable always?
 function struveH_power_series(v, x::T) where T
     MaxIter = 50000
     out = zero(T)
@@ -47,14 +49,14 @@ function struveK(nu, x::T) where T
 end
 
 function struveK_large_argument(v, x::T) where T
-    MaxIter = 50000
+    MaxIter = 500
     out = zero(T)
     a = (x/2)^(v-1) * gamma(T(1)/2) / gamma(v + 1/2)
     iszero(a) && return a
     t2 = (x/2)^(-2)
     for i in 0:MaxIter
         out += a
-        abs(a) < eps(T) * abs(out) && break
+        abs(a) < 1e-14 && break
         a *= (i + 1/2)*t2 *  (v - 1/2 - i)
     end
     return out / T(pi)
