@@ -53,7 +53,7 @@ function struveH_power_series(v, x::T) where T
     end
     return out
 end
-struveH_power_series_cutoff(nu, x) = x < 5 || nu > evalpoly(x, (-0.75, 0.41, 0.023))
+struveH_power_series_cutoff(nu, x) = x < 6 || nu > evalpoly(x, (-0.75, 0.41, 0.023))
 
 # K_{nu}(x) using large argument expansion
 # http://dlmf.nist.gov/11.6.E1
