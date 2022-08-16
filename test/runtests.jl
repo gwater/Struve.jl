@@ -1,5 +1,6 @@
 using Struve
 using Test
+using SpecialFunctions
 
 # using Table 2 and 3 from
 # https://doi.org/10.1016/S0377-0427(01)00580-5
@@ -42,3 +43,4 @@ const h0_zeros = [
 end
 
 @time @testset "struveL" begin include("struveL_tests.jl") end
+@time @testset "struveH" begin include("struveH_tests.jl") end

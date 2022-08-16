@@ -16,9 +16,8 @@ for x in 0.1:1.1:150.0
 end
 
 for x in 0.1:1.3:80.0, v in 0.1:1.2:40.0
-    @show v, x
     t = Struve.struveH_power_series(BigFloat(v), BigFloat(x))
-    @test isapprox(Struve.struveH(v, x), t, rtol=1e-11)
+    @test isapprox(Struve.struveH(v, x), t, rtol=1e-10)
 end
 
 # testing for struveM which can be prone to cancellation due to subtraction

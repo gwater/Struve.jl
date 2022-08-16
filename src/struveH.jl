@@ -26,7 +26,7 @@ _struveK(v::Float16, x::Float16) = Float16(_struveK(Float32(v), Float32(x)))
 
 function _struveK(v::Real, x::T) where T <: Float64
     if struveK_large_arg_cutoff(v, x)
-        return struvek_large_argument(v, x)
+        return struveK_large_argument(v, x)
     elseif struveH_power_series_cutoff(v, x)
         return struveH_power_series(v, x) - bessely(v, x)
     else
