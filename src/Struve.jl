@@ -2,6 +2,9 @@ __precompile__()
 
 module Struve
 
+using SpecialFunctions
+using QuadGK
+
 include("fast.jl")
 include("integral.jl")
 include("struveH.jl")

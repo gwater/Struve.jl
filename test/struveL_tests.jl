@@ -1,4 +1,3 @@
-
 # implement test based on http://dlmf.nist.gov/11.4.E7
 for x in 0.1:1.1:300.0
     @test isapprox(Struve.struveL.(0.5, x), sqrt(2 / (BigFloat(x)*pi)) * (cosh(BigFloat(x)) - 1), rtol=1e-14)
