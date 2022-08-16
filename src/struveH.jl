@@ -1,4 +1,12 @@
-function struveH(v::Real, x::T) where T
+
+struveH(v::Real, x::Real) = _struveH(float(v), float(x))
+struveH(v, x) = _H_integral(v, x)
+
+_struveH(v, x::AbstractFloat) = _H_integral(v, x)
+_struveH(v::Float32, x::Float32) = Float32(_struveH(Float64(v), Float64(x)))
+_struveH(v::Float16, x::Float16) = Float16(_struveH(Float32(v), Float32(x)))
+
+function _struveH(v, x::T) where T <: Float64
     if struveK_large_arg_cutoff(v, x)
         # use http://dlmf.nist.gov/11.2.E6
         return struveK_large_argument(v, x) + bessely(v, x)
@@ -9,7 +17,14 @@ function struveH(v::Real, x::T) where T
     end
 end
 
-function struveM(v::Real, x::T) where T
+struveK(v::Real, x::Real) = _struveK(float(v), float(x))
+struveK(v, x) = _K_integral(v, x)
+
+_struveK(v, x::AbstractFloat) = _K_integral(v, x)
+_struveK(v::Float32, x::Float32) = Float32(_struveK(Float64(v), Float64(x)))
+_struveK(v::Float16, x::Float16) = Float16(_struveK(Float32(v), Float32(x)))
+
+function _struveK(v::Real, x::T) where T <: Float64
     if struveK_large_arg_cutoff(v, x)
         return struvek_large_argument(v, x)
     elseif struveH_power_series_cutoff(v, x)
