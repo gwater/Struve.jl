@@ -9,7 +9,7 @@ integrate(f, a, b) = QuadGK.quadgk(f, a, b)[1]
 _K0_integral(z::T) where T = (2 / T(pi)) * integrate(t -> exp(-z * sinh(t)), zero(T), T(Inf))
 
 function _K_integral(ν, z::T) where T
-    out = 2 * (z / 2)^ν / (sqrt(T(π) * gamma(ν + one(T)/2)))
+    out = 2 * (z / 2)^ν / (sqrt(T(π)) * gamma(ν + one(T)/2))
     return out * integrate(t -> exp(-z * t) * (one(T) + t^2)^(ν - one(T)/2), zero(T), T(Inf))
 end
 
