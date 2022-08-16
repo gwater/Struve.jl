@@ -16,7 +16,7 @@ for x in 0.1:1.1:300.0
 end
 
 for x in rand(100)*200, v in rand(100)*100
-    t = Struve.struveL_power_series(BigFloat(v), BigFloat(x))
+    t = Float64(Struve.struveL_power_series(BigFloat(v), BigFloat(x)))
     @test isapprox(Struve.struveL(v, x), t, rtol=1e-13)
 end
 
