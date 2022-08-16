@@ -4,6 +4,8 @@ module Struve
 
 include("fast.jl")
 include("integral.jl")
+include("struveH.jl")
+include("struveL.jl")
 
 # define defaults, should be exact
 const H0 = _H0_integral
