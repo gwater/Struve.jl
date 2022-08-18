@@ -30,10 +30,10 @@ _K0_integral(z::Complex{T}) where {T <: Real} = _H0_integral(z) - bessely0(z)
 _K_integral(ν, z::Complex{T}) where {T <: Real} = _H_integral(ν, z) - bessely(ν, z)
 
 # only valid for real(ν) > -0.5, https://dlmf.nist.gov/11.5.E4
-_M0_integral(z) = -(2 / T(π)) * integrate(ϑ -> exp(-z * cos(ϑ)), zero(T), T(π)/2)
+_M0_integral(z::T) where T = -(2 / T(π)) * integrate(ϑ -> exp(-z * cos(ϑ)), zero(T), T(π)/2)
 
 
-function _M_integral(ν, z)
+function _M_integral(ν, z::T) where T
     out =  -2 * (z / 2)^ν / (sqrt(T(π)) * gamma(ν + one(T)/2))
     return out * integrate(t -> exp(-z * t) * (1 - t^2)^(ν - one(T)/2), zero(T), one(T))
 end
