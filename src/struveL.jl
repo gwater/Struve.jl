@@ -2,10 +2,9 @@ struveL(v::Real, x::Real) = _struveL(float(v), float(x))
 struveL(v, x) = _L_integral(v, x)
 
 _struveL(v, x::AbstractFloat) = _L_integral(v, x)
-_struveL(v::Float32, x::Float32) = Float32(_struveL(Float64(v), Float64(x)))
 _struveL(v::Float16, x::Float16) = Float16(_struveL(Float32(v), Float32(x)))
 
-function _struveL(v, x::T) where T <: Float64
+function _struveL(v, x::T) where T <: Union{Float32, Float64}
     if struveM_large_arg_cutoff(v, x)
         # use http://dlmf.nist.gov/11.2.E6
         return struveM_large_argument(v, x) + besseli(v, x)
@@ -18,10 +17,9 @@ struveM(v::Real, x::Real) = _struveM(float(v), float(x))
 struveM(v, x) = _M_integral(v, x)
 
 _struveM(v, x::AbstractFloat) = _M_integral(v, x)
-_struveM(v::Float32, x::Float32) = Float32(_struveM(Float64(v), Float64(x)))
 _struveM(v::Float16, x::Float16) = Float16(_struveM(Float32(v), Float32(x)))
 
-function _struveM(v, x::T) where T <: Float64
+function _struveM(v, x::T) where T <: Union{Float32, Float64}
     if struveM_large_arg_cutoff(v, x)
         return struveM_large_argument(v, x)
     else
@@ -67,4 +65,5 @@ function struveM_large_argument(v, x::T) where T
     return out / T(pi)
 end
 
-struveM_large_arg_cutoff(nu, x)  = x > 35 && nu < evalpoly(x, (7.0, -0.59, 0.011))
+struveM_large_arg_cutoff(nu, x::Float64)  = x > 35 && nu < evalpoly(x, (7.0, -0.59, 0.011))
+struveM_large_arg_cutoff(nu, x::Float32)  = nu < 1.5*x < 45
