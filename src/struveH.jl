@@ -37,13 +37,12 @@ end
 # H_{nu}(x) Struve function power series
 # http://dlmf.nist.gov/11.2.E1
 # can use for x < 5 || nu > -0.75 + 0.41x + 0.023x^2
-# could result in premature underflow for nu >> x
 # struve H can be computed with forward recurrence only when x < nu
 # backward recurrence may be stable always?
 function struveH_power_series(v, x::T) where T
     MaxIter = 50000
     out = zero(T)
-    a = (x/2)^(v+1) / (gamma(v + T(3)/2) * gamma(T(3)/2))
+    a = (x/2) / (gamma(v + T(3)/2) * gamma(T(3)/2))
     iszero(a) && return a
     t2 = (x/2)^2
     for i in 0:MaxIter
@@ -51,7 +50,8 @@ function struveH_power_series(v, x::T) where T
         abs(a) < eps(T) * abs(out) && break
         a *= -inv((v + i + T(3)/2) * (i + T(3)/2)) * t2
     end
-    return out
+    v = (x/2)^(v/2)
+    return (out * v) * v
 end
 struveH_power_series_cutoff(nu, x) = x < 6 || nu > evalpoly(x, (-0.75, 0.41, 0.023))
 
