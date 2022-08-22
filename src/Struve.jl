@@ -5,10 +5,15 @@ module Struve
 using SpecialFunctions
 using QuadGK
 
+export struveh
+export struvek
+export struvel
+export struvem
+
 include("fast.jl")
 include("integral.jl")
-include("struveH.jl")
-include("struveL.jl")
+include("struveh.jl")
+include("struvel.jl")
 
 # define defaults, should be exact
 const H0 = _H0_integral

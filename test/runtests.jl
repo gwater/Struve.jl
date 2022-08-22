@@ -42,5 +42,5 @@ const h0_zeros = [
     @test !(abs(Struve.H(0, 22.0 + 0im)) < 1e-10)
 end
 
-@time @testset "struveL" begin include("struveL_tests.jl") end
-@time @testset "struveH" begin include("struveH_tests.jl") end
+@time @testset "struvel" begin include("struvel_tests.jl") end
+@time @testset "struveh" begin include("struveh_tests.jl") end
