@@ -15,9 +15,9 @@ for x in 0.1:1.1:300.0
     @test isapprox(s, t, rtol=1e-14)
 end
 
-for x in rand(250)*150, v in rand(200)*150
+for x in rand(200)*100, v in rand(200)*60
     t = Float64(Struve.struvel_power_series(BigFloat(v), BigFloat(x)))
-    @test isapprox(Struve.struvel(v, x), t, rtol=5e-13)
+    @test isapprox(Struve.struvel(v, x), t, rtol=1e-12)
 end
 
 # testing for struvem which can be prone to cancellation due to subtraction
