@@ -129,8 +129,8 @@ function log_struvem_large_argument(v, x::T) where T
     return exp(log(out / π) + loggamma(one_half) - loggamma(v + one_half) + v*log(x/2)) 
 end
 
-struvem_large_arg_cutoff(nu, x::Float64)  = x > 35 && nu < evalpoly(x, (7.0, -0.59, 0.011))
-struvem_large_arg_cutoff(nu, x::Float32)  = x > 32 && nu < 1.5f0*x
+struvem_large_arg_cutoff(nu, x::Float64)  = x > 37 && nu < evalpoly(x, (7.0, -0.59, 0.011))
+struvem_large_arg_cutoff(nu, x::Float32)  = x > 33 && nu < 1.5f0*x
 
 gamma_max(x::BigFloat) = x > 260
 gamma_max(x::Float64) = x > 160

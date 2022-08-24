@@ -15,7 +15,7 @@ for x in 0.1:1.1:300.0
     @test isapprox(s, t, rtol=1e-14)
 end
 
-for x in rand(200)*100, v in rand(200)*60
+for x in 0.1:1.5:100.0, v in 0.0:0.3:60.0
     t = Float64(Struve.struvel_power_series(BigFloat(v), BigFloat(x)))
     @test isapprox(Struve.struvel(v, x), t, rtol=1e-12)
 end
