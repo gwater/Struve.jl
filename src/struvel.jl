@@ -22,7 +22,7 @@ struvel(v::Real, x::Real) = _struvel(float(v), float(x))
 struvel(v, x) = _L_integral(v, x)
 
 _struvel(v, x::AbstractFloat) = _L_integral(v, x)
-_struvel(v::Float16, x::Float16) = Float16(_struvel(Float32(v), Float32(x)))
+_struvel(v, x::Float16) = Float16(_struvel(Float32(v), Float32(x)))
 
 function _struvel(v, x::T) where T <: Union{Float32, Float64}
     if struvem_large_arg_cutoff(v, x)

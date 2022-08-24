@@ -71,18 +71,34 @@ function struveh_power_series(v, x::T) where T
     MaxIter = 50000
     S = promote_type(T, Float64)
     v, x = S(v), S(x)
-
     out = zero(S)
-    a = (x/2) / (SpecialFunctions.gamma(v + S(3)/2) * SpecialFunctions.gamma(S(3)/2))
+    three_halves = S(3) / 2
+
+    a = (x/2)^(v+1)
+    (isinf(a) || gamma_max(v)) && return T(log_struveh_power_series(v, x))
+    a /= gamma(v + three_halves) * gamma(three_halves)
     iszero(a) && return a
+
     t2 = (x/2)^2
     for i in 0:MaxIter
         out += a
         abs(a) < eps(T) * abs(out) && break
-        a *= -inv((v + i + S(3)/2) * (i + S(3)/2)) * t2
+        a *= -inv((v + i + three_halves) * (i + three_halves)) * t2
     end
-    v = (x/2)^(v/2)
-    return T((out * v) * v)
+    return T(out)
+end
+function log_struveh_power_series(v, x::T) where T
+    MaxIter = 10000
+    out = zero(T)
+    three_halves = T(3) / 2
+    a = x / 2 
+    t2 = a*a
+    for i in 0:MaxIter
+        out += a
+        abs(a) < eps(T) * abs(out) && break
+        a *= -inv((v + i + three_halves) * (i + three_halves)) * t2
+    end
+    return exp(v*log(x/2) + log(out) - loggamma(v + three_halves) - loggamma(three_halves))
 end
 struveh_power_series_cutoff(nu, x::Float64) = x < 6 || nu > evalpoly(x, (-0.75, 0.41, 0.023))
 struveh_power_series_cutoff(nu, x::Float32) = x < 26 || nu > evalpoly(x, (-10.0f0, 0.1f0, 0.012f0))
@@ -90,23 +106,43 @@ struveh_power_series_cutoff(nu, x::Float32) = x < 26 || nu > evalpoly(x, (-10.0f
 # K_{nu}(x) using large argument expansion
 # http://dlmf.nist.gov/11.6.E1
 function struvek_large_argument(v, x::T) where T
-    MaxIter = 5000
+    MaxIter = 50000
     S = promote_type(T, Float64)
     v, x = S(v), S(x)
-
     out = zero(S)
-    a = (x/2)^(v-1) * gamma(one(S)/2) / gamma(v + one(S)/2)
+    one_half = one(S) / 2
+
+    a = (x/2)^(v-1)
+    (isinf(a) || gamma_max(v)) && return T(log_struvek_large_argument(v, x))
+    a *= gamma(one_half) / gamma(v + one_half)
     iszero(a) && return a
-    t2 = (2/x)^2
+
+    t2 = (x/2)^(-2)
     for i in 0:MaxIter
         out += a
-        abs(a) < eps(T) && break
-        a *= (i + one(S)/2)*t2 *  (v - one(S)/2 - i)
+        abs(a) < eps(T) * abs(out) && break
+        a *= (i + one_half) * t2 * (v - one_half - i)
     end
-    return out / T(pi)
+    return T(out / π)
 end
-struvek_large_arg_cutoff(nu, x) = x > 39 && nu < 1.6*x - 43.0
 
+function log_struvek_large_argument(v, x::T) where T
+    MaxIter = 50000
+    out = zero(T)
+    one_half = one(T) / 2
+    a = 2 / x
+    iszero(a) && return a
+    t2 = a*a
+    for i in 0:MaxIter
+        out += a
+        abs(a) < eps(T) * abs(out) && break
+        a *= (i + one_half) * t2 * (v - one_half - i)
+    end
+    return exp(log(out / π) + loggamma(one_half) - loggamma(v + one_half) + v*log(x/2)) 
+end
+
+struvek_large_arg_cutoff(nu, x) = x > 39 && nu < 1.23*x - 35
+struvek_large_arg_cutoff(nu, x::Float32) = x > 17 && nu < 1.23*x - 23
 
 #####
 #####  Chebyshev approximation for struvek_{nu}(x)
