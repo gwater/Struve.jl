@@ -1,5 +1,6 @@
 using Struve
 using Test
+using SpecialFunctions
 
 # using Table 2 and 3 from
 # https://doi.org/10.1016/S0377-0427(01)00580-5
@@ -40,3 +41,6 @@ const h0_zeros = [
     @test !(abs(Struve.H(0,  2.0 + 0im)) < 1e-10)
     @test !(abs(Struve.H(0, 22.0 + 0im)) < 1e-10)
 end
+
+@time @testset "struvel" begin include("struvel_tests.jl") end
+@time @testset "struveh" begin include("struveh_tests.jl") end

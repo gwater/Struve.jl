@@ -1,8 +1,6 @@
 # based on http://dx.doi.org/10.1121/1.4968792, only valid for real arguments
 # returns NaN at z = 0
 
-import SpecialFunctions
-
 # principal constants
 const t0 =  0.8830472903
 const c1 =  0.9846605676 # not used

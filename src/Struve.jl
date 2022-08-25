@@ -2,10 +2,18 @@ __precompile__()
 
 module Struve
 
+using SpecialFunctions
+using QuadGK
+
+export struveh
+export struvek
+export struvel
+export struvem
+
 include("fast.jl")
 include("integral.jl")
-include("large_arg.jl")
-include("small_arg.jl")
+include("struveh.jl")
+include("struvel.jl")
 
 # define defaults, should be exact
 const H0 = _H0_integral
