@@ -11,15 +11,17 @@
 # For the region of x ∈ (6, 39) we use Chebyshev approximation for v ∈ (0, 2) and then use forward recurrence to fill higher orders.
 # Forward recurrence is also used starting with large argument asymptotic expansion up until order 30.
 # When v > 30 and x > 30 (and where large argument expansion is not valid) we fall back to computing struvek(v, x)
-# from its integral representation [4] using adaptive gaussian integration (QuadGK.jl).
+# from its expansion in series of Bessel functions [4]. This method in general works best for nu > x but works well as long as x is not much larger than nu.
 # Backward recurrence may work in this region however, the power series validity depends on x^2 so we would have to shift to very high values
 # and use backward recurrence over a large number of orders which is not very efficient.
-# TODO: Use a different algorithm (large order expansion) in this region instead of relying on quadgk that is more efficient and doesn't allocate.
+# If the arguments are not real we use the integral representation [5] using adaptive gaussian integration (QuadGK.jl).
+# TODO: Investigate the large order expansions.
 #
 # [1] http://dlmf.nist.gov/11.2.E1
 # [2] http://dlmf.nist.gov/11.6.E1
 # [3] http://dlmf.nist.gov/11.2.E5
-# [4] http://dlmf.nist.gov/11.5.E2
+# [4] http://dlmf.nist.gov/11.4.E19
+# [5] http://dlmf.nist.gov/11.5.E2
 #
 
 """
