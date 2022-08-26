@@ -22,7 +22,7 @@ end
 
 # testing for struveM which can be prone to cancellation due to subtraction
 # in some domains struveL ≈ besseli leading to loss of digits
-for x in 0.1:0.15:2.0, v in 0.1:1.2:20.0
+for x in 0.1:0.15:2.0, v in 0.1:1.2:40.0
     x = x*v
     t = Struve.struveh_power_series(BigFloat(v), BigFloat(x)) - bessely(v, x)
     @test isapprox(Struve.struvek(v, x), t, rtol=1e-9)
