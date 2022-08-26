@@ -47,7 +47,7 @@ function _struveh(v, x::T) where T <: Union{Float32, Float64}
         k0, k1 = struvek_large_argument(v_floor, x), struvek_large_argument(v_floor + 1, x)
         return struvek_up_recurrence(x, k1, k0, v_floor + 1, v)[1] + bessely(v, x)
     else
-        return _H_integral(v, x)
+        return struveh_bessel_series(v, x)
     end
 end
 
@@ -75,7 +75,7 @@ function _struvek(v::Real, x::T) where T <: Union{Float32, Float64}
         k0, k1 = struvek_large_argument(v_floor, x), struvek_large_argument(v_floor + 1, x)
         return struvek_up_recurrence(x, k1, k0, v_floor + 1, v)[1]
     else
-        return T(g([v,x]))#_K_integral(v, x)
+        return struveh_bessel_series(v, x) - bessely(v, x)
     end
 end
 
@@ -308,4 +308,46 @@ function struvek_up_recurrence(x::T, knu, knum1, nu_start, nu_end) where T
         nu_start += 1
     end
     return knum1, knu
+end
+
+# Expansion of struveh in series of Bessel functions
+# http://dlmf.nist.gov/11.4.E19
+# The form given by 11.4.E20 is more prone to cancellation
+# In general, this is accurate when nu > x/2 though more terms are needed when x > nu
+# A simple translation of the formula given by 11.4.E19 will be very slow as it requires calls to besselj
+# each time within the loop
+# Because we only require besselj(k, x) and then besselj(k+1, x) during the loop we can use recurrence
+# Unfortunately, forward recurrence is only stable when nu < x but we usually employ this when nu > x so we can't use forward
+# Backward recurrence for besselj is always stable so we will employ that
+# The difficult part is we can no longer check for convergence as we sum through the loop as we need to know how many terms
+# This was solved by defining regions of convergence for a set amount of terms (e.g., 45, 75, 150)
+# We need to be careful not to indiscriminately use a large amount of terms as besselj will underflow which will make recurrence useless
+# These optimizations speed up the code by roughly 20x even when using more iterations within the sum 
+function struveh_bessel_series(v, x::T) where T
+    x2 = x / 2
+    two_x = 2 / x
+    out = zero(T)
+
+    # need to be careful not to start loop too high as besselj -> 0 and could underflow
+    if v > evalpoly(x, (-5.0, 0.001, 0.021))
+        Iter = 45
+    elseif v > evalpoly(x, (-3.0, 0.15, 0.008))
+        Iter = 75
+    else
+        Iter = 150
+    end
+
+    # compute besselj(v, x) and besselj(v+1, x)
+    jnup1 = besselj(Iter + T(3)/2 + v, x)
+    jnu = besselj(Iter + T(1)/2 + v, x)
+
+    # avoid overflow
+    x2_pow = x2^(Iter/2)
+    a = x2_pow / gamma(Iter + 1)
+    for k in Iter:-1:0
+        out += a / (k + T(1)/2) * jnu
+        a *= k / x2
+        jnup1, jnu = jnu, muladd((k + T(1)/2 + v)*two_x, jnu, -jnup1)
+    end
+    return out*sqrt(x2 / π) * x2_pow
 end
