@@ -389,4 +389,4 @@ function struveh_large_arg(v, x::T) where T
     # return out * (x/2)^(v-1) / sqrt(pi) / gamma(v + 1/2)
     return exp(log(out / sqrt(T(π))) + (v-1)*log(x/2) - loggamma(v + one(T)/2))
 end
-struveh_large_arg_cutoff(v, x) = v < evalpoly(x, (-3.0, 0.04, 0.00255))
+struveh_large_arg_cutoff(v, x) = v < evalpoly(x, (-3.0, 0.04, 0.00255)) && v > 100
