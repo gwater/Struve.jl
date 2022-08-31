@@ -353,3 +353,36 @@ function struveh_bessel_series(v, x::T) where T
     end
     return out*sqrt(x2 / π) * x2_pow
 end
+
+# asymptotic expansion for large order and x based on
+# Paris, R. B. "The asymptotics of the Struve function ${\bf H} _\nu (z) $ for large complex order and argument." arXiv preprint arXiv:1510.05110 (2015).
+# Using equation 2.2
+# This is not a uniform expansion and requires x to also be large to give ~16 digits of precision (x > 500 and v > 500)
+# Slightly different than the large argument expansion used for struvek so it works better when v is large and x < v
+# More generally this is accurate in double precision as long as nu < evalpoly(x, (-3.0, 0.04, 0.00255))
+# It might be possible to add more terms as well that could increase the range of validity
+# More terms can be derived using equation 5.5 from Nemes
+# Nemes, Gergő. "On the large argument asymptotics of the Lommel function via Stieltjes transforms." Asymptotic Analysis 91.3-4 (2015): 265-281.
+function struveh_large_arg(v, x::T) where T
+    q = v / x
+    qq = q*q
+
+    k10 = evalpoly(qq, (-893025, 504739620, -21718897200, 221578156800, -714550636800, 670442572800))
+    k9 = q*evalpoly(qq, (3192210, -289396800, 4207563360,  -16605388800, 17643225600))
+    k8 = evalpoly(qq, (11025, -3591000, 83991600, -423783360, 518918400))
+    k7 = q*evalpoly(qq, (-36960, 1738800, -11975040, 17297280))
+    k6 = evalpoly(qq, (-225, 36120, -378000, 665280))
+    k5 = q*evalpoly(qq, (690, -13440, 30240))
+    k4 = evalpoly(qq, (9, -540, 1680))
+    k3 = q*evalpoly(qq, (-24, 120))
+    k2 = 12*qq - 1
+    k1 = 2*q
+
+    xinv = inv(x)
+    out = evalpoly(xinv, (one(T), k1, k2, k3, k4, k5, k6, k7, k8, k9, k10))
+
+    # use logarithm to avoid overflow
+    # return out * (x/2)^(v-1) / sqrt(pi) / gamma(v + 1/2)
+    return exp(log(out / sqrt(T(π))) + (v-1)*log(x/2) - loggamma(v + one(T)/2))
+end
+
