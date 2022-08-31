@@ -43,6 +43,8 @@ function _struveh(v, x::T) where T <: Union{Float32, Float64}
         return struvek_large_argument(v, x) + bessely(v, x)
     elseif struveh_power_series_cutoff(v, x)
         return struveh_power_series(v, x)
+    elseif struveh_large_arg_cutoff(v, x)
+        return struveh_large_arg(v, x)
     elseif v < 30
         struvek_chebyshev_cutoff(x) && return struvek_chebyshev(v, x)[1] + bessely(v, x)
         v_floor = modf(v)[1]
@@ -71,6 +73,8 @@ function _struvek(v::Real, x::T) where T <: Union{Float32, Float64}
         return struvek_large_argument(v, x)
     elseif struveh_power_series_cutoff(v, x)
         return struveh_power_series(v, x) - bessely(v, x)
+    elseif struveh_large_arg_cutoff(v, x)
+        return struveh_large_arg(v, x) - bessely(v, x)
     elseif v < 30
         struvek_chebyshev_cutoff(x) && return struvek_chebyshev(v, x)[1]
         v_floor = modf(v)[1]
@@ -385,4 +389,4 @@ function struveh_large_arg(v, x::T) where T
     # return out * (x/2)^(v-1) / sqrt(pi) / gamma(v + 1/2)
     return exp(log(out / sqrt(T(π))) + (v-1)*log(x/2) - loggamma(v + one(T)/2))
 end
-
+struveh_large_arg_cutoff(v, x) = v < evalpoly(x, (-3.0, 0.04, 0.00255))
