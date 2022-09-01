@@ -340,22 +340,23 @@ function struveh_bessel_series(v, x::T) where T
     elseif v > evalpoly(x, (-3.0, 0.15, 0.008))
         Iter = 75
     else
-        Iter = 150
+        Iter = 165
     end
 
     # compute besselj(v, x) and besselj(v+1, x)
     jnup1 = besselj(Iter + T(3)/2 + v, x)
     jnu = besselj(Iter + T(1)/2 + v, x)
+    iszero(jnup1) && return struveh_large_arg(v, x)
 
     # avoid overflow
     x2_pow = x2^(Iter/2)
-    a = x2_pow / gamma(Iter + 1)
+    a = x2_pow
     for k in Iter:-1:0
         out += a / (k + T(1)/2) * jnu
         a *= k / x2
         jnup1, jnu = jnu, muladd((k + T(1)/2 + v)*two_x, jnu, -jnup1)
     end
-    return out*sqrt(x2 / π) * x2_pow
+    return out*sqrt(x2 / π) * (x2_pow / gamma(Iter + 1)) 
 end
 
 # asymptotic expansion for large order and x based on
