@@ -20,10 +20,30 @@ for x in 0.1:1.3:80.0, v in 0.1:1.2:40.0
     @test isapprox(Struve.struveh(v, x), t, rtol=1e-10)
 end
 
-# testing for struveM which can be prone to cancellation due to subtraction
-# in some domains struveL ≈ besseli leading to loss of digits
-for x in 0.1:0.15:2.0, v in 0.1:1.2:20.0
+# need to increase precision for BigFloat calculations
+setprecision(BigFloat, 2500)
+# test orders between 100-500
+for x in [0.3, 0.5, 0.8, 0.9, 1.0, 1.1, 1.5, 2.0, 3.0], v in [100, 120.2, 170.0, 200.32, 250.2, 300.2, 400.5, 450.0, 490.5]
+    x = x*v
+    t = Struve.struveh_power_series(BigFloat(v), BigFloat(x))
+    @test isapprox(Struve.struveh(v, x), t, rtol=1e-10)
+end
+# test orders between 1000-2000
+for x in [0.9, 1.0, 1.05, 1.1, 1.2], v in [1000.0, 1200.2, 1500.2, 1752.2345, 2000.0]
+    x = x*v
+    t = Struve.struveh_power_series(BigFloat(v), BigFloat(x))
+    @test isapprox(Struve.struveh(v, x), Float64(t), rtol=1e-10)
+end
+
+# testing for struvek
+for x in 0.1:0.15:2.0, v in 0.1:1.2:40.0
     x = x*v
     t = Struve.struveh_power_series(BigFloat(v), BigFloat(x)) - bessely(v, x)
     @test isapprox(Struve.struvek(v, x), t, rtol=1e-9)
+end
+
+for x in [0.75, 0.9, 1.0, 1.1, 1.5, 2.0, 3.0], v in [100.0, 223.2, 400.0, 600.2, 1000.0, 1200.25, 2000.0]
+    x = x*v
+    t = Struve.struveh_power_series(BigFloat(v), BigFloat(x)) - bessely(v, x)
+    @test isapprox(Struve.struvek(v, x), Float64(t), rtol=1e-9)
 end

@@ -11,15 +11,18 @@
 # For the region of x ∈ (6, 39) we use Chebyshev approximation for v ∈ (0, 2) and then use forward recurrence to fill higher orders.
 # Forward recurrence is also used starting with large argument asymptotic expansion up until order 30.
 # When v > 30 and x > 30 (and where large argument expansion is not valid) we fall back to computing struvek(v, x)
-# from its integral representation [4] using adaptive gaussian integration (QuadGK.jl).
+# from its expansion in series of Bessel functions [4]. This method in general works best for nu > x but works well as long as x is not much larger than nu.
 # Backward recurrence may work in this region however, the power series validity depends on x^2 so we would have to shift to very high values
-# and use backward recurrence over a large number of orders which is not very efficient.
-# TODO: Use a different algorithm (large order expansion) in this region instead of relying on quadgk that is more efficient and doesn't allocate.
+# and use backward recurrence over a large number of orders which is not very efficient. For large orders and large argument we use the asymptotic expansions given in [5].
+# If the arguments are not real we use the integral representation [6] using adaptive gaussian integration (QuadGK.jl).
 #
 # [1] http://dlmf.nist.gov/11.2.E1
 # [2] http://dlmf.nist.gov/11.6.E1
 # [3] http://dlmf.nist.gov/11.2.E5
-# [4] http://dlmf.nist.gov/11.5.E2
+# [4] http://dlmf.nist.gov/11.4.E19
+# [5] Paris, R. B. "The asymptotics of the Struve function ${\bf H} _\nu (z) $ for large complex order and argument." 
+#     arXiv preprint arXiv:1510.05110 (2015).
+# [6] http://dlmf.nist.gov/11.5.E2
 #
 
 """
@@ -41,13 +44,15 @@ function _struveh(v, x::T) where T <: Union{Float32, Float64}
         return struvek_large_argument(v, x) + bessely(v, x)
     elseif struveh_power_series_cutoff(v, x)
         return struveh_power_series(v, x)
+    elseif struveh_large_arg_cutoff(v, x)
+        return struveh_large_arg(v, x)
     elseif v < 30
         struvek_chebyshev_cutoff(x) && return struvek_chebyshev(v, x)[1] + bessely(v, x)
         v_floor = modf(v)[1]
         k0, k1 = struvek_large_argument(v_floor, x), struvek_large_argument(v_floor + 1, x)
         return struvek_up_recurrence(x, k1, k0, v_floor + 1, v)[1] + bessely(v, x)
     else
-        return _H_integral(v, x)
+        return struveh_bessel_series(v, x)
     end
 end
 
@@ -69,13 +74,15 @@ function _struvek(v::Real, x::T) where T <: Union{Float32, Float64}
         return struvek_large_argument(v, x)
     elseif struveh_power_series_cutoff(v, x)
         return struveh_power_series(v, x) - bessely(v, x)
+    elseif struveh_large_arg_cutoff(v, x)
+        return struveh_large_arg(v, x) - bessely(v, x)
     elseif v < 30
         struvek_chebyshev_cutoff(x) && return struvek_chebyshev(v, x)[1]
         v_floor = modf(v)[1]
         k0, k1 = struvek_large_argument(v_floor, x), struvek_large_argument(v_floor + 1, x)
         return struvek_up_recurrence(x, k1, k0, v_floor + 1, v)[1]
     else
-        return T(g([v,x]))#_K_integral(v, x)
+        return struveh_bessel_series(v, x) - bessely(v, x)
     end
 end
 
@@ -309,3 +316,139 @@ function struvek_up_recurrence(x::T, knu, knum1, nu_start, nu_end) where T
     end
     return knum1, knu
 end
+
+# Expansion of struveh in series of Bessel functions
+# http://dlmf.nist.gov/11.4.E19
+# The form given by 11.4.E20 is more prone to cancellation
+# In general, this is accurate when nu > x/2 though more terms are needed when x > nu
+# A simple translation of the formula given by 11.4.E19 will be very slow as it requires calls to besselj
+# each time within the loop
+# Because we only require besselj(k, x) and then besselj(k+1, x) during the loop we can use recurrence
+# Unfortunately, forward recurrence is only stable when nu < x but we usually employ this when nu > x so we can't use forward
+# Backward recurrence for besselj is always stable so we will employ that
+# The difficult part is we can no longer check for convergence as we sum through the loop as we need to know how many terms
+# This was solved by defining regions of convergence for a set amount of terms (e.g., 45, 75, 150)
+# We need to be careful not to indiscriminately use a large amount of terms as besselj will underflow which will make recurrence useless
+# These optimizations speed up the code by roughly 20x even when using more iterations within the sum 
+function struveh_bessel_series(v, x::T) where T
+    x2 = x / 2
+    two_x = 2 / x
+    out = zero(T)
+
+    # need to be careful not to start loop too high as besselj -> 0 and could underflow    
+    if v > evalpoly(x, (-5.0, 0.001, 0.021))
+        Iter = 45
+    else #v > evalpoly(x, (-3.0, 0.15, 0.008))
+        Iter = 75
+    end
+    
+    # compute besselj(v, x) and besselj(v+1, x)
+    jnup1 = besselj(Iter + T(3)/2 + v, x)
+    jnu = besselj(Iter + T(1)/2 + v, x)
+    iszero(jnup1) && return struveh_large_arg(v, x)
+
+    # avoid overflow
+    x2_pow = x2^(Iter/2)
+    a = x2_pow
+    for k in Iter:-1:0
+        out += a / (k + T(1)/2) * jnu
+        a *= k / x2
+        jnup1, jnu = jnu, muladd((k + T(1)/2 + v)*two_x, jnu, -jnup1)
+    end
+    return out*sqrt(x2 / π) * (x2_pow / gamma(Iter + 1)) 
+end
+
+# for 25 terms nu < evalpoly(x, (-40.0, 0.18, 0.0098))
+# for 10 terms nu < evalpoly(x, (-3.0, 0.04, 0.0043)
+# asymptotic expansion for large order and x based on
+# Paris, R. B. "The asymptotics of the Struve function ${\bf H} _\nu (z) $ for large complex order and argument." arXiv preprint arXiv:1510.05110 (2015).
+# Using equation 2.2
+# This is not a uniform expansion and requires x to also be large to give ~16 digits of precision (x > 500 and v > 500)
+# Slightly different than the large argument expansion used for struvek so it works better when v is large and x < v
+# More generally this is accurate in double precision as long as nu < evalpoly(x, (-3.0, 0.04, 0.00255))
+# It might be possible to add more terms as well that could increase the range of validity
+# More terms can be derived using equation 5.5 from Nemes
+# Nemes, Gergő. "On the large argument asymptotics of the Lommel function via Stieltjes transforms." Asymptotic Analysis 91.3-4 (2015): 265-281.
+struveh_large_arg_cutoff(v, x) = v < evalpoly(x, (-40.0, 0.18, 0.0098)) && v > 30
+
+function struveh_large_arg(v, x::T) where T
+    q = v / x
+    xinv = inv(x)
+
+    if v < evalpoly(x, (-3.0, 0.04, 0.00255))
+        out = evalpoly(xinv, struveh_large_arg_10(q))
+    elseif v < evalpoly(x, (-40.0, 0.18, 0.0098))
+        out = evalpoly(xinv, struveh_large_arg_25(q))
+    else
+        # the region nu > 500 and x < 300 does not converge
+        # need this until bessel series can better handle this region
+        out = evalpoly(xinv, struveh_large_arg_10(q))
+    end
+
+    # use logarithm to avoid overflow
+    # return out * (x/2)^(v-1) / sqrt(pi) / gamma(v + 1/2)
+    return exp(log(out / sqrt(T(π))) + (v-1)*log(x/2) - loggamma(v + one(T)/2))
+end
+
+function struveh_large_arg_10(q)
+    qq = q*q
+
+    k10 = evalpoly(qq, (-893025, 504739620, -21718897200, 221578156800, -714550636800, 670442572800))
+    k9 = q*evalpoly(qq, (3192210, -289396800, 4207563360,  -16605388800, 17643225600))
+    k8 = evalpoly(qq, (11025, -3591000, 83991600, -423783360, 518918400))
+    k7 = q*evalpoly(qq, (-36960, 1738800, -11975040, 17297280))
+    k6 = evalpoly(qq, (-225, 36120, -378000, 665280))
+    k5 = q*evalpoly(qq, (690, -13440, 30240))
+    k4 = evalpoly(qq, (9, -540, 1680))
+    k3 = q*evalpoly(qq, (-24, 120))
+    k2 = 12*qq - 1
+    k1 = 2*q
+    k0 = 1.0
+    return k0, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10
+end
+
+function struveh_large_arg_25(q)
+    qq = q*q
+
+    k25 = q*evalpoly(qq, (3788707301/207618048, -416299085839/18022400, 362585330841461/64880640, -13563583962461/28800, 38663661025876601/2150400, -22975794073089/64, 7839382564708349/1920, -55623690946239/2, 18594699452746599/160, -297674351473499, 904394337080949/2, -371492394429312, 126410606437752)) * 15511210043330985984000000.0
+    k24 = evalpoly(qq, (676039/4194304, -859281633145/1089994752, 3015452567491/8650752, -8373118616785/196608, 1085730283775371/516096, -546386296362335/10752, 513867516997705/768, -327435651749465/64, 1501639366851195/64, -518696828019825/8, 419420871875005/4, -90739267810425, 32247603683100)) * 620448401733239439360000.0
+    k23 = q*evalpoly(qq, (-46522243/2703360, 1199676974483/68124672, -41903099147/12288, 2802890180051/12288, -575082384305/84, 23776038514943/224, -3685868278785/4, 18697210966995/4, -14012321485500, 24218944972950, -22138780400880, 8233430727600)) * 25852016738884976640000.0
+    k22 = evalpoly(qq, (-88179/524288, 754586713103/1135411200, -4346492146867/18579456, 554040090409/24576, -12471164816175/14336, 21793437556475/1344, -5184052271437/32, 7338469210905/8, -24015465721995/8, 5569805360925, -5394811877910, 2104098963720)) * 1124000727777607680000.0
+    k21 = q*evalpoly(qq, (31730711/1966080, -126644051369/9676800, 9223338545993/4644864, -39565430047/384, 25482761976815/10752, -83095528334/3, 1415704958063/8, -636828855300, 2549529617745/2, -1312824084000, 538257874440)) * 51090942171709440000.0
+    k20 = evalpoly(qq, (46189/262144, -2708022229/4915200, 1669299965993/11059200, -309608781625/27648, 336551631559/1024, -1173628390935/256, 535605077371/16, -267201323895/2, 1160733686805/4, -318991005795, 137846528820)) * 2432902008176640000
+    k19 = q*evalpoly(qq, (-7759469/516096, 3477223607/368640, -209834405/192, 147819122165/3456, -23369150805/32, 198080714195/32, -27674096800, 65654851020, -77377469400, 35345263800)) * 121645100408832000
+    k18 = evalpoly(qq, (-12155/65536, 2309705911/5160960, -5133848621/55296, 177891980827/34560, -256026564365/2304, 71330664405/64, -90385420125/16, 14752005650, -18733672155, 9075135300)) * 6402373705728000
+    k17 = q*evalpoly(qq, (1593269/114688, -105603805/16128, 862057493/1536, -639701139/40, 12444145285/64, -2267315505/2, 13153623525/4, -4525781760, 2333606220)) * 355687428096000
+    k16 = evalpoly(qq, (6435/32768, -25409883/71680, 3472062337/64512, -2749215469/1280, 20899715969/640, -10703146025/48, 5810555205/8, -2181340125/2, 601080390)) * 20922789888000
+    k15 = q*evalpoly(qq, (-1423/112, 87424387/20160, -6339521/24, 209388949/40, -42820756, 476124610/3, -262095120, 155117520)) * 1307674368000
+    k14 = evalpoly(qq, (-429/2048, 243681/896, -1851759/64, 12664507/16, -63900705/8, 34240261, -62775050, 40116600)) * 87178291200
+    k13 = q*evalpoly(qq, (88069/7680, -16219/6, 1776313/16, -1437350, 14549535/2, -14976864, 10400600)) * 6227020800
+    k12 = evalpoly(qq, (231/1024, -2305303/11520, 1352351/96, -988533/4, 6067555/4, -3556553, 2704156)) * 479001600
+    k11 = q*evalpoly(qq, (-1627/160, 745927/480, -40040, 308958, -839800, 705432)) * 39916800
+    k10 = evalpoly(qq, (-893025, 504739620, -21718897200, 221578156800, -714550636800, 670442572800))
+    k9 = q*evalpoly(qq, (3192210, -289396800, 4207563360,  -16605388800, 17643225600))
+    k8 = evalpoly(qq, (11025, -3591000, 83991600, -423783360, 518918400))
+    k7 = q*evalpoly(qq, (-36960, 1738800, -11975040, 17297280))
+    k6 = evalpoly(qq, (-225, 36120, -378000, 665280))
+    k5 = q*evalpoly(qq, (690, -13440, 30240))
+    k4 = evalpoly(qq, (9, -540, 1680))
+    k3 = q*evalpoly(qq, (-24, 120))
+    k2 = 12*qq - 1
+    k1 = 2*q
+    k0 = 1.0
+    return k0, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14, k15, k16, k17, k18, k19, k20, k21, k22, k23, k24, k25
+end
+
+
+#=
+    k35 = q*evalpoly(qq, (-2738032559863/118648471552, 328666585290088963891/4796364462489600, -6160183888155641039/152599265280, 16719590881736316995483/1961990553600, -1309086277796385161932309/1560674304000, 1549062713364013876428139/34681651200, -100313742453791734922977/70963200, 137850336892561593726937/4866048, -138452047303638188534401/368640, 139038644140939720860553/40960, -4094334634896467616655/192, 12039065982018253532393/128, -9326898293283434324097/32, 100498506110574294941603/160, -917545953391756741248, 863006834954354482392, -469881656362544381592, 112186277816662845432)) * 10333147966386144929666651337523200000000.0
+    k34 = evalpoly(qq, (-583401555/4294967296, 36514732926665911/23492397367296, -231207366745846736939/136031345049600, 12617422198783169389/23781703680, -1432496903721678267017/20761804800, 404762750154911913910339/89181388800, -8809232612494403695151/51904512, 189481727247491084522071/48660480, -102162420121231090482575/1769472, 84522857247579914693803/147456, -7986902626398781690605/2048, 14144374353536835593185/768, -15498164034025833905745/256, 8788470418122605047761/64, -10068583021150601104535/48, 205168969333405242564, -115617023009466373395, 28453041475240576740)) * 295232799039604140847618609643520000000.0
+    k33 = q*evalpoly(qq, (10823198495797/488552529920, -1947990356120581/34351349760, 88481876934216700553/3091621478400, -126369570711809194181/24524881920, 422544183921261629763421/980995276800, -514632258586104057217/26542080, 33475992531829001735659/64880640, -1392937060794961281533/161280, 41958748675312563544303/442368, -1618798805065791605165/2304, 5479274002368855890383/1536, -99823458876133539365/8, 1911335654089819673625/64, -95595216459459811325/2, 584304308083142474695/12, -28433441217048677376, 7219428434016265740)) * 8683317618811886495518194401280000000.0
+    k32 = evalpoly(qq, (300540195/2147483648, -4430404534447751/3206125977600, 2662604592914979547/2061080985600, -1590359813299644279937/4637432217600, 2244871009987081474181/59454259200, -49379960313472128067/23592960, 11607701739647522864719/176947200, -3696080808438888412301/2949120, 158412535859375085798367/10321920, -2295123501445788542375/18432, 2097500709648379330295/3072, -652904210508964858899/256, 826684021673211086385/128, -173651448729374106183/16, 92276178202639506845/8, -13977395233697059549/2, 1832624140942590534)) * 263130836933693530167218012160000000.0
+    k31 = q*evalpoly(qq, (-41743955887/1968046080, 3870531958802753/83492864000, -53249590719413773/2683699200, 218441175478079262937/72459878400, -163843184866047635/774144, 1760281719561998269/221184, -364471513203024647849/2073600, 781291302137874123563/322560, -6068004060002456847/280, 37151150978450317655/288, -6198692102777513339/12, 5552745358216674891/4, -2455076538872117160, 2726955584734987452, -1716743925941536800, 465428353255261088)) * 8222838654177922817725562880000000.0
+    k30 = evalpoly(qq, (-9694845/67108864, 12090408192971851/9918952243200, -2173184910895101641/2254307328000, 31194162098123354371/144919756800, -5264172859017433211/265420800, 14168094375657640457/15482880, -131160615100197957911/5529600, 1541867498320677432179/4147200, -238488524871965818351/64512, 484347381507698112283/20160, -29832997540730247325/288, 7113665745062269211/24, -2212344793504357785/4, 643320816511890594, -421442852101900244, 118264581564861424)) * 265252859812191058636308480000000.0
+    k29 = q*evalpoly(qq, (340028535787/16793993216, -2896097657787241/77491814400, 503876081049337769/37571788800, -41751674767951/24576, 3062358505263124757/30965760, -98826130006157411/32256, 15291913623174429293/276480, -3729710521674821057/6048, 23678350905609733883/5376, -20546965943928853, 1507940383806213665/24, -124048623910511300, 151417099672718607, -103389197086141120, 30067266499541040)) * 8841761993739701954543616000000.0
+    k28 = evalpoly(qq, (5014575/33554432, -256237226361047/240459448320, 5240655014827711663/7439214182400, -24273753334119313/185794560, 87951306831831511/8847360, -5826899827330409663/15482880, 1138559282117422997/143360, -77054086783249601/768, 383888428574752754587/483840, -515439090528938191/128, 634256450311906477/48, -166128560448423125/6, 71099695753852675/2, -25344979308883458, 7648690600760440)) * 304888344611713860501504000000.0
+    k27 = q*evalpoly(qq, (-2888008157/149946368, 21009339852836339/708496588800, -120493768845107/13685760, 15213213148443317/16588800, -1339765607158231/30720, 302814445481242343/276480, -6855567148276405/432, 121096213855303447/864, -560710643866536163/720, 44077284182663193/16, -6147572917928464, 24971496934124300/3, -6208165338387376, 1946939425648112)) * 10888869450418352160768000000.0
+    k26 = evalpoly(qq, (-1300075/8388608, 9678055904571/10496245760, -8694583916935/17301504, 618725840335633/8110080, -40600213580344253/8601600, 2952762628630859/20480, -18669957833729753/7680, 1550137681564583/64, -94971844642309803/640, 91015403882428179/160, -10856604396333465/8, 1943240597943606, -1519358250453750, 495918532948104)) * 403291461126605635584000000.0
+=#
