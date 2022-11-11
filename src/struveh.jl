@@ -335,18 +335,13 @@ function struveh_bessel_series(v, x::T) where T
     two_x = 2 / x
     out = zero(T)
 
-    # need to be careful not to start loop too high as besselj -> 0 and could underflow
-    if v > 10000
-        Iter = 140
-    else
-        if v > evalpoly(x, (-5.0, 0.001, 0.021))
-            Iter = 45
-        else #v > evalpoly(x, (-3.0, 0.15, 0.008))
-            Iter = 75
-        end
-        
+    # need to be careful not to start loop too high as besselj -> 0 and could underflow    
+    if v > evalpoly(x, (-5.0, 0.001, 0.021))
+        Iter = 45
+    else #v > evalpoly(x, (-3.0, 0.15, 0.008))
+        Iter = 75
     end
-
+    
     # compute besselj(v, x) and besselj(v+1, x)
     jnup1 = besselj(Iter + T(3)/2 + v, x)
     jnu = besselj(Iter + T(1)/2 + v, x)
@@ -411,27 +406,7 @@ function struveh_large_arg_10(q)
     k0 = 1.0
     return k0, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10
 end
-function struveh_large_arg_15(q)
-    qq = q*q
 
-    k15 = q*evalpoly(qq, (-1423/112, 87424387/20160, -6339521/24, 209388949/40, -42820756, 476124610/3, -262095120, 155117520)) * 1307674368000
-    k14 = evalpoly(qq, (-429/2048, 243681/896, -1851759/64, 12664507/16, -63900705/8, 34240261, -62775050, 40116600)) * 87178291200
-    k13 = q*evalpoly(qq, (88069/7680, -16219/6, 1776313/16, -1437350, 14549535/2, -14976864, 10400600)) * 6227020800
-    k12 = evalpoly(qq, (231/1024, -2305303/11520, 1352351/96, -988533/4, 6067555/4, -3556553, 2704156)) * 479001600
-    k11 = q*evalpoly(qq, (-1627/160, 745927/480, -40040, 308958, -839800, 705432)) * 39916800
-    k10 = evalpoly(qq, (-893025, 504739620, -21718897200, 221578156800, -714550636800, 670442572800))
-    k9 = q*evalpoly(qq, (3192210, -289396800, 4207563360,  -16605388800, 17643225600))
-    k8 = evalpoly(qq, (11025, -3591000, 83991600, -423783360, 518918400))
-    k7 = q*evalpoly(qq, (-36960, 1738800, -11975040, 17297280))
-    k6 = evalpoly(qq, (-225, 36120, -378000, 665280))
-    k5 = q*evalpoly(qq, (690, -13440, 30240))
-    k4 = evalpoly(qq, (9, -540, 1680))
-    k3 = q*evalpoly(qq, (-24, 120))
-    k2 = 12*qq - 1
-    k1 = 2*q
-    k0 = 1.0
-    return k0, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14, k15
-end
 function struveh_large_arg_25(q)
     qq = q*q
 
